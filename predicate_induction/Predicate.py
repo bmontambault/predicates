@@ -62,7 +62,7 @@ class Predicate(object):
             
     def set_attribute_values(self, attribute_values, attribute_mask=None, mask=None):
         if attribute_mask is None:
-            attribute_mask = get_filters_masks(data, dtypes, self.attribute_values)
+            attribute_mask = get_filters_masks(self.data, self.dtypes, self.attribute_values)
         if mask is None:
             mask = attribute_mask.all(axis=1)
         return Predicate(self.data, self.dtypes, attribute_values, attribute_mask, mask)
@@ -74,7 +74,7 @@ class Predicate(object):
             attribute_mask = self.attribute_mask
         else:
             attribute_mask = self.attribute_mask.copy()
-            attribute_mask[attribute] = get_filter_mask(self.data, self.dtypes, attribute, value)
+            attribute_mask[attribute] = get_filter_mask(self.data, self.dtypes, attribute, values)
         if mask is None:
             mask = self.mask
         return Predicate(self.data, self.dtypes, attribute_values, attribute_mask, mask)
