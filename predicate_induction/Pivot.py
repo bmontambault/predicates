@@ -24,7 +24,7 @@ class Pivot(object):
             num_bins = self.get_num_bins(max_bins)
             grouper = pd.cut(self.data[self.attribute], bins=num_bins)
         
-        if y == 'count' or y in self.data.columns:
+        if type(y) == str:
             if y == 'count':
                 agg_col = self.data.columns[0] if self.data.columns[0] != self.attribute else self.data.columns[1]
                 agg_func = 'count' 
@@ -34,9 +34,11 @@ class Pivot(object):
                 agg_func = 'mean'
                 columns = [self.attribute, y, 'predicate']
             d = self.data.groupby(grouper)[[agg_col, 'predicate']].agg({agg_col: agg_func, 'predicate': 'mean'}).reset_index()
+            d.columns = columns
         else:
             d = y.groupby(grouper).mean().reset_index()
-        d.columns = columns
+            d['predicate'] = d[self.attribute].map(self.data.predicate.groupby(grouper).mean())
+            d.columns = [self.attribute, 'score', 'predicate']
         
         if self.dtype != 'nominal':
             d[self.attribute] = d[self.attribute].apply(lambda x: np.round((x.left+x.right)/2,2))
