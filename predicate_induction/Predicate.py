@@ -1,10 +1,11 @@
+from .Pivot import Pivot
 from .utils import get_filter_mask
 from .utils import get_filters_masks
 from .utils import merge_filter_value
 
 class Predicate(object):
     
-    def __init__(self, data=None, dtypes=None, attributes=None, attribute_values=None, attribute_mask=None, mask=None, **kwargs):
+    def __init__(self, data=None, dtypes=None, attributes=None, attribute_values=None, attribute_mask=None, mask=None, adj_outer=None, adj_inner=None, parents=None, **kwargs):
         self.attributes = list(dtypes.keys()) if attributes is None else attributes
         if attribute_values is None:
             self.attribute_values = {}
@@ -14,20 +15,54 @@ class Predicate(object):
         else:
             self.attribute_values = attribute_values
         self.predicate_attributes = list(self.attribute_values.keys())
+        if adj_outer is None:
+            self.adj_outer = {}
+        else:
+            self.adj_outer = adj_outer
+        if adj_inner is None:
+            self.adj_inner = {}
+        else:
+            self.adj_inner = adj_inner
         if data is not None:
-            self.set_data(data, dtypes)
+            self.set_data(data, dtypes, attribute_mask, mask)
+        self.parents = parents
             
-    def set_data(self, data, dtypes):
+    def is_contained_attribute(self, predicate, attribute):
+        values_a = self.attribute_values[attribute]
+        values_b = predicate.attribute_values[attribute]
+        if self.dtypes[attribute] == 'nominal':
+            return values_a[0] == values_b[0]
+        else:
+            return (values_b[0]<=values_a[0]) & (values_b[1]>=values_a[1])
+
+    def is_contained(self, predicate):
+        for attribute in self.attribute_values:
+            if attribute not in predicate.attribute_values:
+                return False
+            else:
+                is_contained = self.is_contained_attribute(predicate, attribute)
+                if not is_contained:
+                    return False
+        return True
+    
+    def is_contained_any(self, predicates):
+        return any([self.is_contained(predicate) for predicate in predicates])
+            
+    def set_data(self, data, dtypes, attribute_mask=None, mask=None):
         self.data = data
-        self.dtypes = dtypes
-        if self.attribute_values is None:
+        self.dtypes = dtypes        
+        if attribute_mask is None:
             self.attribute_mask = get_filters_masks(data, dtypes, self.attribute_values)
-        if self.mask is None:
+        else:
+            self.attribute_mask = attribute_mask
+        if mask is None:
             self.mask = self.attribute_mask.all(axis=1)
+        else:
+            self.mask = mask
             
     def set_attribute_values(self, attribute_values, attribute_mask=None, mask=None):
         if attribute_mask is None:
-            attribute_mask = get_filters_masks(self.data, self.dtypes, self.attribute_values)
+            attribute_mask = get_filters_masks(data, dtypes, self.attribute_values)
         if mask is None:
             mask = attribute_mask.all(axis=1)
         return Predicate(self.data, self.dtypes, attribute_values, attribute_mask, mask)
@@ -44,43 +79,102 @@ class Predicate(object):
             mask = self.mask
         return Predicate(self.data, self.dtypes, attribute_values, attribute_mask, mask)
     
-    def merge_attribute(self, predicate, attribute):
+    def get_attribute(self, attribute):
+        attribute_values = {attribute: self.attribute_values[attribute]}
+        adj_outer = {attribute: self.adj_outer.get(attribute,{})}
+        adj_inner = {attribute: self.adj_inner.get(attribute,{})}
+        attribute_mask = self.attribute_mask[[attribute]]
+        mask = attribute_mask[attribute]
+        return Predicate(self.data, self.dtypes, None, attribute_values, attribute_mask, mask, adj_outer, adj_inner)
+    
+    def merge_adjacent_attribute(self, predicate, attribute, side):
+        adj_outer = {}
+        if side == 'right':
+            if 'right' in predicate.adj_outer[attribute]:
+                adj_outer['right'] = predicate.adj_outer[attribute]['right']
+            if 'left' in self.adj_outer[attribute]:
+                adj_outer['left'] = self.adj_outer[attribute]['left']
+            adj_inner = {'right': self.get_attribute(attribute)}
+            if attribute in self.adj_inner and 'left' in self.adj_inner[attribute]: 
+                adj_inner['left'] = self.adj_inner[attribute]['left']
+        elif side == 'left':        
+            if 'right' in self.adj_outer[attribute]:
+                adj_outer['right'] = self.adj_outer[attribute]['right']
+            if 'left' in predicate.adj_outer[attribute]:
+                adj_outer['left'] = predicate.adj_outer[attribute]['left']
+            adj_inner = {'left': self.get_attribute(attribute)}
+            if attribute in self.adj_inner and 'right' in self.adj_inner[attribute]: 
+                adj_inner['right'] = self.adj_inner[attribute]['right']
+        return adj_outer, adj_inner
+    
+    def add_attribute(self, predicate, attribute):
         attribute_values = {k: v for k,v in self.attribute_values.items()}
+        attribute_values[attribute] = predicate.attribute_values[attribute]
+        attribute_mask = self.attribute_mask.copy()
+        attribute_mask[attribute] = predicate.attribute_mask[attribute]
+        mask = self.mask & predicate.mask
+        
+        adj_outer = {k: v for k,v in self.adj_outer.items()}
+        for k,v in predicate.adj_outer.items():
+            adj_outer[k] = v
+        adj_inner = {k: v for k,v in self.adj_inner.items()}
+        for k,v in predicate.adj_inner.items():
+            adj_inner[k] = v
+        predicate = Predicate(self.data, self.dtypes, self.attributes, attribute_values, attribute_mask, mask, adj_outer, adj_inner, parents=[self, predicate])
+        return predicate
+    
+    def merge_attribute_side(self, predicate, attribute, side):
+        dtype = self.dtypes[attribute]
+        attribute_values = {k: v for k,v in self.attribute_values.items()}
+        attribute_mask = self.attribute_mask.copy()
         if attribute in self.attributes:
-            attribute_values[attribute] = merge_filter_value(attribute, attribute_values[attribute], predicate.attribute_values[attribute], self.dtypes[attribute])
-            
+            attribute_values[attribute] = merge_filter_value(attribute_values[attribute], predicate.attribute_values[attribute], dtype)
+            attribute_mask[attribute] = attribute_mask[attribute] | predicate.attribute_mask[attribute]
         else:
             attribute_values[attribute] = predicate.attribute_values[attribute]
-    
-    def merge_attribute_adjacent(self, adjacent, attribute):
-        if len(adjacent)>0:
-            new_predicate = max([self.merge_attribute(adj) for adj in adjacent], key=lambda x: x.bf)
-            if new_predicate.bf > self.bf:
-                return new_predicate.expand_attribute(attribute)
-            else:
-                return self, False
-        else:
-            return self, False
-    
-    def expand_attribute(self, attribute):
-        adjacent = self.adjacent.get(attribute,[])
-        return self.merge_adjacent(adjacent)
+            attribute_mask[attribute] = predicate.attribute_mask[attribute]
         
-    def refine_attribute(self, attribute):
-        adjacent = self.parents.get(attribute,[])
-        return self.merge_adjacent(adjacent)
+        adj_outer = {k: v for k,v in predicate.adj_outer.items()}
+        adj_inner = {k: v for k,v in predicate.adj_inner.items()}
+        adj_outer_attr, adj_inner_attr = self.merge_adjacent_attribute(predicate, attribute, side)
+        adj_outer[attribute] = adj_outer_attr
+        adj_inner[attribute] = adj_inner_attr
+        predicate = Predicate(self.data, self.dtypes, self.attributes, attribute_values, attribute_mask, None, adj_outer, adj_inner, parents=[self, predicate])
+        return predicate
+    
+    def pivot(self, attribute, data=None):
+        other_attributes = [attr for attr in self.predicate_attributes if attr != attribute]
+        return Pivot(
+            data if self.data is None else self.data,
+            self.dtypes, attribute, self.attribute_values[attribute],
+            {attr:self.attribute_values[attr] for attr in other_attributes},
+            self.attribute_mask[attribute],
+            self.attribute_mask[other_attributes].all(axis=1),
+        )
+    
+    
+    def set_attribute_side(self, predicate, attribute, side):
+        dtype = self.dtypes[attribute]
+        attribute_values = {k: v for k,v in self.attribute_values.items()}
+        attribute_mask = self.attribute_mask.copy()
+        attribute_values[attribute] = predicate.attribute_values[attribute]
+        attribute_mask[attribute] = predicate.attribute_mask[attribute]
+        
+        adj_outer = {k: v for k,v in predicate.adj_outer.items()}
+        adj_inner = {k: v for k,v in predicate.adj_inner.items()}
+        adj_outer[attribute] = predicate.adj_outer[attribute]
+        adj_inner[attribute] = predicate.adj_inner.get(attribute,{})
+        predicate = Predicate(self.data, self.dtypes, self.attributes, attribute_values, attribute_mask, None, adj_outer, adj_inner)
+        return predicate
+    
+    def get_adjacent_attribute_inner(self, attribute):
+        return [(self.set_attribute_side(v, attribute, k),v) for k,v in self.adj_inner.get(attribute,{}).items()]
+
+    def get_adjacent_attribute_outer(self, attribute):
+        return [(self.merge_attribute_side(v, attribute, k),v) for k,v in self.adj_outer.get(attribute,{}).items()]
     
     def __eq__(self, predicate):
         return self.attribute_values == predicate.attribute_values
-    
-    def get_data(self, option=None):
-        if option in self.attributes:
-            mask = self.attribute_mask[[attr for attr in self.attributes if attr != option]].all(axis=1)
-            return self.data.loc[mask].assign(predicate=self.attribute_mask[option])
-        elif option == '~':
-            return self.data.loc[~self.mask]
-        else:
-            return self.data.loc[self.mask]
         
     def bf(self, target, bf_func, option=None):
         data = self.get_data(option)
