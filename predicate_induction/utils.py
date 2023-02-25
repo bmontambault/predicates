@@ -1,3 +1,13 @@
+import pandas as pd
+import numpy as np
+from .utils import infer_dtype
+from .utils import get_filter_mask
+from .utils import get_cols
+from .utils import sample_nominal
+from .utils import get_dtype_cols
+from .utils import get_filter_clause_text
+from .utils import get_filter_predicate_clause_text
+
 def infer_dtype(d):
     if d.nunique() == 2:
         return 'binary'
@@ -41,6 +51,15 @@ def encode(df, dtypes):
     df_ = pd.DataFrame(df_cols).T
     df_.columns = df_names
     return df_
+
+def bin_numeric(df, dtypes, num_bins=25):
+    rows = []
+    for col in df.columns:
+        if dtypes[col] == 'numeric':
+            rows.append(pd.cut(df[col], bins=num_bins))
+        else:
+            rows.append(df[col])
+    return pd.DataFrame(rows).T
 
 def get_filter_mask(data, dtypes, attribute, value):
     dtype = dtypes[attribute]
@@ -149,3 +168,12 @@ def get_filter_predicate_clause_text(attribute, value, dtype):
             return f'{attribute}>{value[0]}'
         else:
             return f'{attribute}:{value}'
+
+def merge_filter_value(value1, value2, dtype):
+    if dtype in ('nominal','binary'):
+        return list(set(value1+value2))
+    else:
+        left_val = min(value1[0], value2[0])
+        right_val = max(value1[1], value2[1])
+        return [left_val, right_val]
+    
