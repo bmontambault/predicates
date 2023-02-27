@@ -21,7 +21,7 @@ class Pivot(object):
         self.data = data.loc[self.context_mask].reset_index(drop=True).assign(predicate=self.mask)
         self.dtype = self.dtypes[self.attribute]
         
-    def get_plot_data_text(self, y='count', max_bins=25):
+    def get_plot_data_text(self, y='count', max_bins=25, to_dict=False):
         if self.dtype == 'nominal':
             grouper = self.attribute
         else:
@@ -54,6 +54,8 @@ class Pivot(object):
         context_text = get_filters_text(self.context, self.dtypes)
         comparison_text = get_filters_text({self.attribute: self.value}, self.dtypes)
         value_text = f'{y if y == "count" else agg_func + " " + y} is {"greater" if gt else "less"} ({np.round(y_agg_in,2)}/{np.round(y_agg_out,2)})'
+        if to_dict:
+            d = d.to_dict('records')
         return d, (context_text, comparison_text, value_text)
     
     def get_num_bins(self, max_bins):
