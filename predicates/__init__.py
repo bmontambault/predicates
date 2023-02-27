@@ -17,3 +17,4 @@ from .utils import get_filters_text
 from .utils import get_filter_clause_text
 from .utils import get_filters_predicate_text
 from .utils import get_filter_predicate_clause_text
+from .predicates_from_data import data_to_predicates
