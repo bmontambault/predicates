@@ -74,7 +74,7 @@ class Predicate(object):
             attribute_mask = self.attribute_mask
         else:
             attribute_mask = self.attribute_mask.copy()
-            attribute_mask[attribute] = get_filter_mask(self.data, self.dtypes, attribute, value)
+            attribute_mask[attribute] = get_filter_mask(self.data, self.dtypes, attribute, values)
         if mask is None:
             mask = self.mask
         return Predicate(self.data, self.dtypes, attribute_values, attribute_mask, mask)
