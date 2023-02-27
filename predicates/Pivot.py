@@ -39,12 +39,13 @@ class Pivot(object):
                 columns = [self.attribute, y, 'predicate']
             d = self.data.groupby(grouper)[[agg_col, 'predicate']].agg({agg_col: agg_func, 'predicate': 'mean'}).reset_index()
             d.columns = columns
+            y_agg = self.data[agg_col].groupby(self.mask).agg(agg_func)
         else:
             d = y.groupby(grouper).mean().reset_index()
             d['predicate'] = d[self.attribute].map(self.data.predicate.groupby(grouper).mean())
             d.columns = [self.attribute, 'score', 'predicate']
+            y_agg = y.groupby(self.mask).mean()
         
-        y_agg = self.data[agg_col].groupby(self.mask).agg(agg_func)
         y_agg_in = y_agg[True]
         y_agg_out = y_agg[False]
         gt = y_agg_in > y_agg_out
@@ -53,7 +54,7 @@ class Pivot(object):
         
         context_text = get_filters_text(self.context, self.dtypes)
         comparison_text = get_filters_text({self.attribute: self.value}, self.dtypes)
-        value_text = f'{y if y == "count" else agg_func + " " + y} is {"greater" if gt else "less"} ({np.round(y_agg_in,2)}/{np.round(y_agg_out,2)})'
+        value_text = f'{"value" if type(y) != str else y if y == "count" else agg_func + " " + y} is {"greater" if gt else "less"} ({np.round(y_agg_in,2)}/{np.round(y_agg_out,2)})'
         if to_dict:
             d = d.to_dict('records')
         return d, (context_text, comparison_text, value_text)
