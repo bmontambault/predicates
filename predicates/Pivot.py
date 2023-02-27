@@ -1,11 +1,15 @@
 import pandas as pd
 import numpy as np
-from .utils import get_filters_masks, get_filter_mask
+from .utils import get_filter_mask
+from .utils import get_filters_masks
+from .utils import get_filters_text
 
 class Pivot(object):
     
     def __init__(self, data=None, dtypes=None, attribute=None, value=None, context=None, mask=None, context_mask=None):
         self.attribute = attribute
+        self.value = value
+        self.context = context
         if data is not None:
             self.set_data(data, dtypes, mask, context_mask)
             
@@ -17,7 +21,7 @@ class Pivot(object):
         self.data = data.loc[self.context_mask].reset_index(drop=True).assign(predicate=self.mask)
         self.dtype = self.dtypes[self.attribute]
         
-    def get_plot_data(self, y='count', max_bins=25):
+    def get_plot_data_text(self, y='count', max_bins=25):
         if self.dtype == 'nominal':
             grouper = self.attribute
         else:
@@ -40,9 +44,17 @@ class Pivot(object):
             d['predicate'] = d[self.attribute].map(self.data.predicate.groupby(grouper).mean())
             d.columns = [self.attribute, 'score', 'predicate']
         
+        y_agg = self.data[agg_col].groupby(self.mask).agg(agg_func)
+        y_agg_in = y_agg[True]
+        y_agg_out = y_agg[False]
+        gt = y_agg_in > y_agg_out
         if self.dtype != 'nominal':
             d[self.attribute] = d[self.attribute].apply(lambda x: np.round((x.left+x.right)/2,2))
-        return d
+        
+        context_text = get_filters_text(self.context, self.dtypes)
+        comparison_text = get_filters_text({self.attribute: self.value}, self.dtypes)
+        value_text = f'{y if y == "count" else agg_func + " " + y} is {"greater" if gt else "less"} ({np.round(y_agg_in,2)}/{np.round(y_agg_out,2)})'
+        return d, (context_text, comparison_text, value_text)
     
     def get_num_bins(self, max_bins):
         best_score = np.inf
