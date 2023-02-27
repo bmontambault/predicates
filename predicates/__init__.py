@@ -1,4 +1,3 @@
-from .Predicates import Predicates
 from .Predicate import Predicate
 from .utils import infer_dtype
 from .utils import infer_dtypes
