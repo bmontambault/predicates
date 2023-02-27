@@ -1,8 +1,8 @@
 from setuptools import setup
 
 setup(
-	name='predicate_induction',
+	name='predicates',
 	version='0.0.0',
-	packages=['predicate_induction'],
+	packages=['predicates'],
 	install_requires=[],
 )
