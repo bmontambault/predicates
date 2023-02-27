@@ -23,7 +23,7 @@ class Pivot(object):
         
     def get_plot_data_text(self, y='count', max_bins=25, to_dict=False):
         if self.dtype == 'nominal':
-            grouper = self.attribute
+            grouper = self.data[self.attribute]
         else:
             num_bins = self.get_num_bins(max_bins)
             grouper = pd.cut(self.data[self.attribute], bins=num_bins)
