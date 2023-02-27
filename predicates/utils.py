@@ -170,4 +170,3 @@ def merge_filter_value(value1, value2, dtype):
         left_val = min(value1[0], value2[0])
         right_val = max(value1[1], value2[1])
         return [left_val, right_val]
-    
