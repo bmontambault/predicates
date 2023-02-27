@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from utils import get_filters_masks, get_filters_mask
+from .utils import get_filters_masks, get_filter_mask
 
 class Pivot(object):
     
@@ -11,7 +11,7 @@ class Pivot(object):
             
     def set_data(self, data, dtypes, mask=None, context_mask=None):
         self.context_mask = get_filters_masks(data, dtypes, self.context) if context_mask is None else context_mask
-        self.mask = get_filters_mask(data, dtypes, {self.attribute: self.value}) if mask is None else mask
+        self.mask = get_filter_mask(data, dtypes, {self.attribute: self.value}) if mask is None else mask
         self.mask = self.mask.loc[self.context_mask].reset_index(drop=True)
         self.dtypes = dtypes
         self.data = data.loc[self.context_mask].reset_index(drop=True).assign(predicate=self.mask)

@@ -1,7 +1,7 @@
-from Pivot import Pivot
-from utils import get_filter_mask
-from utils import get_filters_masks
-from utils import merge_filter_value
+from .Pivot import Pivot
+from .utils import get_filter_mask
+from .utils import get_filters_masks
+from .utils import merge_filter_value
 
 class Predicate(object):
     

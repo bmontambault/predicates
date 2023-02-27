@@ -34,7 +34,7 @@ class PredicateInduction(object):
             self.path = path
         
         if module_path is None:
-            self.module_path = os.path.join('predicate_induction', 'predicate_induction')
+            self.module_path = 'predicates'
         else:
             self.module_path = module_path
         self.started_search = False
@@ -156,7 +156,6 @@ class PredicateInduction(object):
             self.accepted = {
                 i+1: PredicatesRead(self.data, self.dtypes, os.path.join(self.path, f'accepted_{i+1}'), self.predicate_data) for i in range(len(self.attribute_predicates))
             }
-            print(self.frontier)
                         
         else:
             num_accepted = 0

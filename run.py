@@ -1,4 +1,5 @@
 import os
+import sys
 import dill
 import argparse
 import json
@@ -15,20 +16,11 @@ numpy2ri.activate()
 pandas2ri.activate()
 RBayesFactor=importr('BayesFactor', suppress_messages=True)
 
-from PredicatesRead import PredicatesRead
-
 def run(path, has_predicates=False, has_frontier=False, has_accepted=False, max_accepted=None, max_steps=None, max_clauses=None, breadth_first=None):
     with open(os.path.join(path, 'predicate_induction.pkl'), 'rb') as f:
         predicate_induction = dill.load(f)
-    if has_predicates:
-        predicates_path = os.path.join(path, 'predicates')
-        predicates = PredicatesRead(predicate_induction.data, predicate_induction.dtypes, predicates_path, predicate_induction.predicate_data)
-        predicates.update()
-    else:
-        predicates = None
     predicate_induction.background = False
-    print(predicate_induction)
-    predicate_induction.search(predicates.predicates, max_accepted, max_steps, max_clauses, breadth_first)
+    predicate_induction.search(None, max_accepted, max_steps, max_clauses, breadth_first)
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

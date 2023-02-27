@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 import json
-from Predicate import Predicate
+from .Predicate import Predicate
 
 class PredicatesRead(Sequence):
     

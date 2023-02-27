@@ -17,5 +17,3 @@ from .utils import get_filters_text
 from .utils import get_filter_clause_text
 from .utils import get_filters_predicate_text
 from .utils import get_filter_predicate_clause_text
-
-import os, sys; sys.path.append(os.path.dirname(os.path.realpath(__file__)))

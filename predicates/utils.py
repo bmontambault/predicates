@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import datetime
 
 def infer_dtype(d):
     if d.nunique() == 2:
