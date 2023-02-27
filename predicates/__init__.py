@@ -1,4 +1,5 @@
 from .Predicate import Predicate
+from .BayesFactor import Anomaly
 from .utils import infer_dtype
 from .utils import infer_dtypes
 from .utils import encode
