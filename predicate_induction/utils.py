@@ -1,12 +1,5 @@
 import pandas as pd
 import numpy as np
-from .utils import infer_dtype
-from .utils import get_filter_mask
-from .utils import get_cols
-from .utils import sample_nominal
-from .utils import get_dtype_cols
-from .utils import get_filter_clause_text
-from .utils import get_filter_predicate_clause_text
 
 def infer_dtype(d):
     if d.nunique() == 2:

@@ -1,12 +1,44 @@
+import json
+import os
+import uuid
+import dill
+import subprocess
+from .PredicatesRead import PredicatesRead
+
 class PredicateInduction(object):
     
-    def __init__(self, target, attribute_predicates, score_func):
+    def __init__(self, data, dtypes, target, score_func, attribute_predicates, frontier=None, accepted=None, path=None, background=False, module_path=None):
+        self.data = data
+        self.dtypes = dtypes
         self.target = target
-        self.attribute_predicates = attribute_predicates
         self.score_func = score_func
+        self.attribute_predicates = attribute_predicates
+        
+        self.predicate_data = {p.__repr__(): {'attribute_mask': p.attribute_mask, 'mask': p.mask} for p in [a for b in self.attribute_predicates.values() for a in b]}
         self.predicate_score = {}
         self.predicate_res = {}
         
+        if frontier is None:
+            self.frontier = sorted([a for b in self.attribute_predicates.values() for a in b], key=lambda x: self.score(x), reverse=True)
+        else:
+            self.frontier = frontier
+        if accepted is None:
+            self.accepted = {i+1: [] for i in range(len(self.attribute_predicates))}
+        else:
+            self.accepted = accepted
+            
+        self.background = background
+        if self.background:
+            self.path = str(uuid.uuid4())
+        else:
+            self.path = path
+        
+        if module_path is None:
+            self.module_path = os.path.join('predicate_induction', 'predicate_induction')
+        else:
+            self.module_path = module_path
+        self.started_search = False
+                    
     def score(self, predicate, **kwargs):
         if predicate.__repr__() not in self.predicate_score:
             score, res = self.score_func(self.target, predicate.mask, None, True, **kwargs)
@@ -55,6 +87,12 @@ class PredicateInduction(object):
         return new_predicates
     
     def insert_sorted(self, lst, predicate, breadth_first=False):
+        if predicate.__repr__() not in self.predicate_data:
+            self.predicate_data[predicate.__repr__()] = {
+                'attribute_mask': predicate.attribute_mask,
+                'mask': predicate.mask
+            }
+
         if len(lst) == 0:
             lst.append(predicate)
             return 1
@@ -71,27 +109,80 @@ class PredicateInduction(object):
         for predicate in predicates:
             self.insert_sorted(lst, predicate, breadth_first)
     
-    def search(self, predicates=None, breadth_first=False, num_clauses=None):
-        if predicates is None:
-            predicates = [a for b in self.attribute_predicates.values() for a in b]
-        self.accepted = {i+1: [] for i in range(len(self.attribute_predicates))}
-        frontier = sorted(predicates, key=lambda x: self.score(x), reverse=True)
-        while len(frontier)>0:
-            print(len(frontier))
-#             print({k: len(v) for k,v in accepted.items()})
-            predicate = frontier.pop(0)
-#             print(predicate, self.score(predicate))
-            print(predicate, self.score(predicate))
-            if not predicate.is_contained_any([a for b in [v for k,v in self.accepted.items() if k>=len(predicate.attribute_values)] for a in b]+frontier):
-                if num_clauses is None or len(predicate.attribute_values)<num_clauses:
-                    new_predicates = self.expand_predicate(predicate)
-                    print([(p, self.score(p)) for p in new_predicates])
-                    if len(new_predicates)>0:
-                        self.insert_sorted_all(frontier, new_predicates, breadth_first)
+    def stop(self):
+        if hasattr(self, 'worker'):
+            self.worker.kill()
+    
+    def save_predicates(self, predicates, name):
+        if not os.path.isdir(self.path):
+            os.makedirs(self.path)
+        with open(os.path.join(self.path, name+'.json'), 'w') as f:
+            predicate_dicts = {i: predicates[i].attribute_values for i in range(len(predicates))}
+            json.dump(predicate_dicts, f)        
+    
+    def save_state(self):
+        self.save_predicates(self.frontier, 'frontier')
+        for k,v in self.accepted.items():
+            self.save_predicates(v, f'accepted_{k}')
+    
+    def search(self, predicates=None, max_accepted=None, max_steps=None, max_clauses=None, breadth_first=False):
+        if self.background:
+            has_predicates = predicates is not None
+            has_frontier = self.frontier is not None
+            has_accepted = self.accepted is not None
+            if has_predicates:
+                self.save_predicates(predicates, 'predicates')
+            if has_frontier:
+                if not self.started_search:
+                    self.save_predicates(self.frontier, 'frontier')
+                self.frontier = []
+            if has_accepted:
+                if not self.started_search:
+                    for k,v in self.accepted.items():
+                        self.save_predicates(v, f'accepted_{k}')
+                self.accepted = {i+1: [] for i in range(len(self.attribute_predicates))}
+            
+            self.started_search = True
+            with open(os.path.join(self.path, 'predicate_induction.pkl'), 'wb') as f:
+                dill.dump(self, f)
+                
+            self.worker = subprocess.Popen([
+                "python", os.path.join(self.module_path, "run.py"),
+                str(has_predicates), str(has_frontier), str(has_accepted),
+                self.path, str(max_accepted), str(max_steps), str(max_clauses), str(breadth_first)
+            ])
+            
+            self.frontier = PredicatesRead(self.data, self.dtypes, os.path.join(self.path, 'frontier'), self.predicate_data)
+            self.accepted = {
+                i+1: PredicatesRead(self.data, self.dtypes, os.path.join(self.path, f'accepted_{i+1}'), self.predicate_data) for i in range(len(self.attribute_predicates))
+            }
+            print(self.frontier)
+                        
+        else:
+            num_accepted = 0
+            num_steps = 0
+            if predicates is not None:
+                self.frontier = predicates
+            
+            while len(self.frontier)>0 and (max_accepted is None or num_accepted<max_accepted) and (max_steps is None or num_steps<max_steps):
+                num_steps+=1
+                predicate = self.frontier.pop(0)
+                size = len(predicate.predicate_attributes)
+                accepted_could_contain = [a for b in [v for k,v in self.accepted.items() if k>=size] for a in b]
+                new_predicates = self.expand_predicate(predicate)
+                if not predicate.is_contained_any(accepted_could_contain+self.frontier):                
+                    if max_clauses is None or size<max_clauses:
+                        if len(new_predicates)>0:
+                            self.insert_sorted_all(self.frontier, new_predicates, breadth_first)
+                        else:
+                            if self.score(predicate)>0:
+                                self.insert_sorted(self.accepted[size], predicate)
+                                num_accepted+=1
+                                if self.path is not None:
+                                    self.save_state()
                     else:
                         if self.score(predicate)>0:
-                            self.insert_sorted(self.accepted[len(predicate.attribute_values)], predicate)
-                else:
-                    if self.score(predicate)>0:
-                        self.insert_sorted(self.accepted[len(predicate.attribute_values)], predicate)
-        return self.accepted
+                            self.insert_sorted(self.accepted[size], predicate)
+                            num_accepted+=1
+                            if self.path is not None:
+                                self.save_state()

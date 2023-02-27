@@ -1,12 +1,12 @@
-from .Pivot import Pivot
-from .utils import get_filter_mask
-from .utils import get_filters_masks
-from .utils import merge_filter_value
+from Pivot import Pivot
+from utils import get_filter_mask
+from utils import get_filters_masks
+from utils import merge_filter_value
 
 class Predicate(object):
     
     def __init__(self, data=None, dtypes=None, attributes=None, attribute_values=None, attribute_mask=None, mask=None, adj_outer=None, adj_inner=None, parents=None, **kwargs):
-        self.attributes = list(dtypes.keys()) if attributes is None else attributes
+        self.attributes = list({} if dtypes is None else dtypes.keys()) if attributes is None else attributes
         if attribute_values is None:
             self.attribute_values = {}
             for k,v in kwargs.items():
@@ -74,7 +74,7 @@ class Predicate(object):
             attribute_mask = self.attribute_mask
         else:
             attribute_mask = self.attribute_mask.copy()
-            attribute_mask[attribute] = get_filter_mask(self.data, self.dtypes, attribute, values)
+            attribute_mask[attribute] = get_filter_mask(self.data, self.dtypes, attribute, value)
         if mask is None:
             mask = self.mask
         return Predicate(self.data, self.dtypes, attribute_values, attribute_mask, mask)
@@ -150,8 +150,7 @@ class Predicate(object):
             {attr:self.attribute_values[attr] for attr in other_attributes},
             self.attribute_mask[attribute],
             self.attribute_mask[other_attributes].all(axis=1),
-        )
-    
+        )        
     
     def set_attribute_side(self, predicate, attribute, side):
         dtype = self.dtypes[attribute]

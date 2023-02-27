@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from .utils import get_filters_masks, get_filters_mask
+from utils import get_filters_masks, get_filters_mask
 
 class Pivot(object):
     
@@ -56,3 +56,4 @@ class Pivot(object):
             if score == 0:
                 return best_num_bins
         return best_num_bins
+    
