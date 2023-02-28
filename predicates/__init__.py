@@ -1,5 +1,5 @@
 from .Predicate import Predicate
-from .BayesFactor import BayesFactor, Anomaly
+from .BayesFactor import BayesFactor, Anomaly, JZS
 from .utils import infer_dtype
 from .utils import infer_dtypes
 from .utils import encode
