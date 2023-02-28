@@ -1,6 +1,5 @@
 from .Predicate import Predicate
 from .PredicateInduction import PredicateInduction
-from .BayesFactor import BayesFactor, Anomaly, JZS
 from .utils import infer_dtype
 from .utils import infer_dtypes
 from .utils import encode
