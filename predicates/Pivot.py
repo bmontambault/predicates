@@ -50,7 +50,7 @@ class Pivot(object):
         y_agg_out = y_agg[False]
         gt = y_agg_in > y_agg_out
         if self.dtype != 'nominal':
-            d[self.attribute] = d[self.attribute].apply(lambda x: np.round((x.left+x.right)/2,2))
+            d[self.attribute] = d[self.attribute].apply(lambda x: x.left)
         
         context_text = get_filters_text(self.context, self.dtypes)
         comparison_text = get_filters_text({self.attribute: self.value}, self.dtypes)
