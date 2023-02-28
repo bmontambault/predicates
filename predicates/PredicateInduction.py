@@ -3,11 +3,12 @@ import os
 import uuid
 import dill
 import subprocess
+import site
 from .PredicatesRead import PredicatesRead
 
 class PredicateInduction(object):
     
-    def __init__(self, data, dtypes, target, score_func, attribute_predicates, frontier=None, accepted=None, path=None, background=False, module_path=None):
+    def __init__(self, data, dtypes, target, score_func, attribute_predicates, frontier=None, accepted=None, path=None, background=False, predicate_generator_path=None):
         self.data = data
         self.dtypes = dtypes
         self.target = target
@@ -33,10 +34,10 @@ class PredicateInduction(object):
         else:
             self.path = path
         
-        if module_path is None:
-            self.module_path = 'predicates'
+        if predicate_generator_path is None:
+            self.predicate_generator_path = os.path.join(site.getsitepackages()[0], 'predicate-generator')
         else:
-            self.module_path = module_path
+            self.predicate_generator_path = predicate_generator_path
         self.started_search = False
                     
     def score(self, predicate, **kwargs):
@@ -125,7 +126,7 @@ class PredicateInduction(object):
         for k,v in self.accepted.items():
             self.save_predicates(v, f'accepted_{k}')
     
-    def search(self, predicates=None, max_accepted=None, max_steps=None, max_clauses=None, breadth_first=False):
+    def search(self, predicates=None, max_accepted=None, max_steps=None, max_clauses=None, breadth_first=False):        
         if self.background:
             has_predicates = predicates is not None
             has_frontier = self.frontier is not None
@@ -145,9 +146,9 @@ class PredicateInduction(object):
             self.started_search = True
             with open(os.path.join(self.path, 'predicate_induction.pkl'), 'wb') as f:
                 dill.dump(self, f)
-                
+            
             self.worker = subprocess.Popen([
-                "python", os.path.join(self.module_path, "run.py"),
+                "python", os.path.join(self.predicate_generator_path, "run.py"),
                 str(has_predicates), str(has_frontier), str(has_accepted),
                 self.path, str(max_accepted), str(max_steps), str(max_clauses), str(breadth_first)
             ])
