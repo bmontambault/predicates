@@ -26,6 +26,13 @@ class Predicate(object):
         if data is not None:
             self.set_data(data, dtypes, attribute_mask, mask)
         self.parents = parents
+        self.is_negated = False
+        
+    def to_dict(self):
+        return {
+            'attribute_values': self.attribute_values,
+            'negated': self.is_negated
+        }
             
     def is_contained_attribute(self, predicate, attribute):
         values_a = self.attribute_values[attribute]
