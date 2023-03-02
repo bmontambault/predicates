@@ -29,10 +29,11 @@ class Predicate(object):
         self.parents = parents
         self.is_negated = False
         
-    def get_distribution(self, d, num_bins=25):
-        mask = self.mask
+    def get_distribution(self, d, mask=None, num_bins=25, include_compliment=False):
+        mask = self.mask if mask is None else mask
         if self.is_negated:
-            mask = ~mask
+            mask = ~mask            
+    
         d_ = d[mask]
         if num_bins>len(d_):
             counts = d_.value_counts()
@@ -41,6 +42,9 @@ class Predicate(object):
             counts.index = counts.index.map(lambda x: x.left)
         dist = (counts/counts.sum()).reset_index()
         dist.columns = ['score', 'density']
+        
+        if include_compliment:
+            dist = pd.concat([dist.assign(predicate=True), self.get_distribution(d, ~mask, num_bins, False).assign(predicate=False)])
         return dist
         
     def to_dict(self):
@@ -49,9 +53,9 @@ class Predicate(object):
             'negated': self.is_negated
         }
     
-    def to_dict_dist(self, d, num_bins=25):
+    def to_dict_dist(self, d, num_bins=25, include_compliment=False):
         dct = self.to_dict()
-        dct['dist'] = self.get_distribution(d, num_bins).to_dict('records')
+        dct['dist'] = self.get_distribution(d, num_bins=num_bins, include_compliment=include_compliment).to_dict('records')
         return dct
             
     def is_contained_attribute(self, predicate, attribute):
