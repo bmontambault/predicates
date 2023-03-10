@@ -20,3 +20,4 @@ from .utils import get_filter_predicate_clause_text
 from .utils import bin_numeric
 from .utils import parse_value_string
 from .predicates_from_data import data_to_predicates
+from .BayesFactor import JZS
