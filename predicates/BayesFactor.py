@@ -23,14 +23,14 @@ class JZS(BayesFactor):
     
     def bayes_factor(self, value1, value2, return_samples=False):
         if self.side == 'right' and value1.mean() < value2.mean():
-            bf = -np.inf
+            bf = -100000
         elif self.side == 'left' and value1.mean() < value2.mean():
-            bf = -np.inf
+            bf = -100000
         elif len(value1)>1 and len(value2)>2:
             res = RBayesFactor.ttestBF(x=value1, y=value2)
             bf = res.slots['bayesFactor']['bf'][0]
         else:
-            bf = -np.inf
+            bf = -100000
         if return_samples:
             return bf, (None, None, None)
         else:
