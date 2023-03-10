@@ -8,22 +8,22 @@ from .PredicatesRead import PredicatesRead
 
 class PredicateInduction(object):
     
-    def __init__(self, data, dtypes, target, score_func, attribute_predicates, frontier=None, accepted=None, path=None, background=False, predicate_generator_path=None):
+    def __init__(self, data, dtypes, target, score_func, attribute_predicates=None, frontier=None, accepted=None, path=None, background=False, predicate_generator_path=None):
         self.data = data
         self.dtypes = dtypes
         self.target = target
         self.score_func = score_func
         self.attribute_predicates = attribute_predicates
         
-        self.predicate_data = {p.__repr__(): {'attribute_mask': p.attribute_mask, 'mask': p.mask} for p in [a for b in self.attribute_predicates.values() for a in b]}
+        self.predicate_data = {p.__repr__(): {'attribute_mask': p.attribute_mask, 'mask': p.mask} for p in [a for b in self.attribute_predicates.values() for a in b]} if self.attribute_predicates is not None else {}
         self.predicate_score = {}
         self.predicate_res = {}
         
-        if frontier is None:
+        if frontier is None and self.attribute_predicates is not None:
             self.frontier = sorted([a for b in self.attribute_predicates.values() for a in b], key=lambda x: self.score(x), reverse=True)
         else:
             self.frontier = frontier
-        if accepted is None:
+        if accepted is None and self.attribute_predicates is not None:
             self.accepted = {i+1: [] for i in range(len(self.attribute_predicates))}
         else:
             self.accepted = accepted
