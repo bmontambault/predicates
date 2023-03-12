@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.stats as st
+from sklearn.metrics import f1_score
 from rpy2.robjects import Formula
 from rpy2.robjects.packages import importr
 from rpy2.robjects import numpy2ri, pandas2ri
@@ -67,3 +68,8 @@ class Anomaly(BayesFactor):
             return bf, (st.norm(mean, std), st.norm(mean_, np.sqrt(1/prec_)), dist)
         else:
             return bf
+        
+class F1(object):
+    
+    def __call__(self, value, mask, *args, **kwargs):
+        return f1_score(value, mask), None
