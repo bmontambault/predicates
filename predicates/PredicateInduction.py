@@ -3,7 +3,6 @@ import os
 import uuid
 import dill
 import subprocess
-import site
 from .PredicatesRead import PredicatesRead
 
 class PredicateInduction(object):
@@ -34,11 +33,12 @@ class PredicateInduction(object):
         else:
             self.path = path
         
-        if predicate_generator_path is None:
-            self.predicate_generator_path = os.path.join(site.getsitepackages()[0], 'predicate-generator')
-        else:
-            self.predicate_generator_path = predicate_generator_path
+#         if predicate_generator_path is None:
+#             self.predicate_generator_path = os.path.join(site.getsitepackages()[0], 'predicate-generator')
+#         else:
+#             self.predicate_generator_path = predicate_generator_path
         self.started_search = False
+        self.last_accepted = None
                     
     def score(self, predicate, **kwargs):
         if predicate.__repr__() not in self.predicate_score:
@@ -176,12 +176,14 @@ class PredicateInduction(object):
                             self.insert_sorted_all(self.frontier, new_predicates, breadth_first)
                         else:
                             if self.score(predicate)>0:
+                                self.last_accepted = predicate
                                 self.insert_sorted(self.accepted[size], predicate)
                                 num_accepted+=1
                                 if self.path is not None:
                                     self.save_state()
                     else:
                         if self.score(predicate)>0:
+                            self.last_accepted = predicate
                             self.insert_sorted(self.accepted[size], predicate)
                             num_accepted+=1
                             if self.path is not None:
