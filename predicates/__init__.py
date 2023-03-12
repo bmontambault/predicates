@@ -19,5 +19,5 @@ from .utils import get_filters_predicate_text
 from .utils import get_filter_predicate_clause_text
 from .utils import bin_numeric
 from .utils import parse_value_string
-from .predicates_from_data import data_to_predicates
+from .predicates_from_data import data_to_predicates, unique
 from .BayesFactor import JZS, F1
