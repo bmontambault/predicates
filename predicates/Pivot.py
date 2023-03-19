@@ -21,11 +21,11 @@ class Pivot(object):
         self.data = data.loc[self.context_mask].reset_index(drop=True).assign(predicate=self.mask)
         self.dtype = self.dtypes[self.attribute]
         
-    def get_plot_data_text(self, y='count', max_bins=25, to_dict=False):
+    def get_plot_data_text(self, y='count', min_bins=2, max_bins=25, to_dict=False):
         if self.dtype == 'nominal':
             grouper = self.data[self.attribute]
         else:
-            num_bins = self.get_num_bins(max_bins)
+            num_bins = self.get_num_bins(min_bins, max_bins)
             grouper = pd.cut(self.data[self.attribute], bins=num_bins)
         
         if type(y) == str:
@@ -59,10 +59,10 @@ class Pivot(object):
             d = d.fillna(0).to_dict('records')
         return d, (context_text, comparison_text, value_text)
     
-    def get_num_bins(self, max_bins):
+    def get_num_bins(self, min_bins, max_bins):
         best_score = np.inf
         best_num_bins = None
-        for num_bins in range(2, max_bins+1):
+        for num_bins in range(min_bins, max_bins+1):
             d = self.data.groupby(pd.cut(self.data[self.attribute], bins=num_bins)).predicate.mean()
             score = (d*(1-d)).sum()
             if score<best_score:
@@ -71,4 +71,3 @@ class Pivot(object):
             if score == 0:
                 return best_num_bins
         return best_num_bins
-    
