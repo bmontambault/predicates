@@ -33,7 +33,6 @@ def infer_dtypes(df, **kwargs):
         elif di == 'numeric':
             df[dtypes[di]] = df[dtypes[di]].astype(float)
         elif di == 'date':
-            print(dtypes[di])
             df[dtypes[di]] = pd.to_datetime(df[dtypes[di]])
     return dtypes
 
