@@ -43,12 +43,12 @@ def data_to_predicates(data, original_data, dtypes):
                 values = [v, v]
             else:
                 values = [v]
-                
-            predicate = Predicate(attributes=attributes, **{attr: values}, adj_outer={attr: {'left': predicates[-1]}} if len(predicates)>0 else {attr: {}})
+            
+            predicate = Predicate(attributes=attributes, **{attr: values}, adj_outer={attr: {'left': predicates[-1]}} if len(predicates)>0 and dtype != 'nominal' else {attr: {}})
             if predicate in predicates:
                 predicate_index = predicates.index(predicate)
             else:
-                if len(predicates)>0:
+                if len(predicates)>0 and dtype != 'nominal':
                     predicates[-1].adj_outer[attr]['right'] = predicate
                 predicate.set_data(original_data, dtypes)
                 predicates.append(predicate)

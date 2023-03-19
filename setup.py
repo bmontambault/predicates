@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
 	name='predicates',
-	version='0.0.17',
+	version='0.0.18',
 	packages=['predicates'],
 	install_requires=[],
 )

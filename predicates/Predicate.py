@@ -58,18 +58,30 @@ class Predicate(object):
         dct['dist'] = self.get_distribution(d, num_bins=num_bins, include_compliment=include_compliment).to_dict('records')
         return dct
             
-    def is_contained_attribute(self, predicate, attribute):
-        values_a = self.attribute_values[attribute]
-        values_b = predicate.attribute_values[attribute]
+    
+    def is_contained_values(self, values_a, attribute):
+        values_b = self.attribute_values[attribute]
         if self.dtypes[attribute] == 'nominal':
             return values_a[0] == values_b[0]
         else:
-            return (values_b[0]<=values_a[0]) & (values_b[1]>=values_a[1])
+            return (values_a[0]<=values_b[0]) & (values_a[1]>=values_b[1])
+    
+    def is_contained_attribute(self, predicate, attribute):
+        values_a = predicate.attribute_values[attribute]
+        return self.is_contained_values(values_a, attribute)
 
     def is_contained(self, predicate):
+#         other_attr = [attr for attr in predicate.predicate_attributes if attr not in self.predicate_attributes]
+#         if len(other_attr) == 0:
+#             if len(predicate.mask) == len(self.mask):
+#                 return True
+            
         for attribute in self.attribute_values:
             if attribute not in predicate.attribute_values:
                 return False
+#                 vals = self.data.loc[predicate.mask, attribute]
+#                 values = list(vals.unique()) if self.dtypes[attribute] == 'nominal' else [vals.min(), vals.max()]
+#                 is_contained = self.is_contained_values(values, attribute)
             else:
                 is_contained = self.is_contained_attribute(predicate, attribute)
                 if not is_contained:

@@ -2,27 +2,38 @@ import pandas as pd
 import numpy as np
 import datetime
 
-def infer_dtype(d):
-    if d.nunique() == 2:
-        return 'binary'
-    elif d.apply(lambda x: isinstance(x, datetime.datetime)).all():
-        return 'date'
-    elif d.apply(lambda x: isinstance(x, float)).all():
-        return 'numeric'
-    elif d.apply(lambda x: isinstance(x, int)).all():
-        return 'ordinal'
+def infer_dtype(d, dtype=None):
+    if dtype is not None:
+        return dtype
     else:
-        r = '(20\d{2})-(\d{2})-(\d{2})'
-        if d.astype(str).str.match(r).all():
+        if d.nunique() == 2:
+            return 'binary'
+        elif d.apply(lambda x: isinstance(x, datetime.datetime)).all():
             return 'date'
+        elif d.apply(lambda x: isinstance(x, float)).all():
+            return 'numeric'
+        elif d.apply(lambda x: isinstance(x, int)).all():
+            return 'ordinal'
         else:
-            return 'nominal'
+            r = '(20\d{2})-(\d{2})-(\d{2})'
+            if d.astype(str).str.match(r).all():
+                return 'date'
+            else:
+                return 'nominal'
 
-def infer_dtypes(df):
-    dtypes = {col: infer_dtype(df[col]) for col in df.columns}
+def infer_dtypes(df, **kwargs):
+    dtypes = {col: infer_dtype(df[col], kwargs.get(col)) for col in df.columns}
     d = list(set(dtypes.values()))
     for di in d:
         dtypes[di] = [k for k,v in dtypes.items() if v == di]
+        if di == 'nominal':
+            df[dtypes[di]] = df[dtypes[di]].astype(str)
+        if di == 'ordinal':
+            df[dtypes[di]] = df[dtypes[di]].astype(int)
+        if di == 'numeric':
+            df[dtypes[di]] = df[dtypes[di]].astype(float)
+        if di == 'date':
+            df[dtypes[di]] = pd.to_datetime(df[dtypes[di]])
     return dtypes
 
 def encode(df, dtypes):
