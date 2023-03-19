@@ -28,11 +28,12 @@ def infer_dtypes(df, **kwargs):
         dtypes[di] = [k for k,v in dtypes.items() if v == di]
         if di == 'nominal':
             df[dtypes[di]] = df[dtypes[di]].astype(str)
-        if di == 'ordinal':
+        elif di == 'ordinal':
             df[dtypes[di]] = df[dtypes[di]].astype(int)
-        if di == 'numeric':
+        elif di == 'numeric':
             df[dtypes[di]] = df[dtypes[di]].astype(float)
-        if di == 'date':
+        elif di == 'date':
+            print(dtypes[di])
             df[dtypes[di]] = pd.to_datetime(df[dtypes[di]])
     return dtypes
 
