@@ -19,8 +19,9 @@ class BayesFactor(object):
     
 class JZS(BayesFactor):
     
-    def __init__(self, side=None):
+    def __init__(self, side=None, rscale='medium'):
         self.side = side
+        self.rscale = rscale
     
     def bayes_factor(self, value1, value2, return_samples=False):
         if self.side == 'right' and value1.mean() < value2.mean():
@@ -28,7 +29,7 @@ class JZS(BayesFactor):
         elif self.side == 'left' and value1.mean() < value2.mean():
             bf = -100000
         elif len(value1)>1 and len(value2)>2:
-            res = RBayesFactor.ttestBF(x=value1, y=value2)
+            res = RBayesFactor.ttestBF(x=value1, y=value2, rscale=self.rscale)
             bf = res.slots['bayesFactor']['bf'][0]
         else:
             bf = -100000

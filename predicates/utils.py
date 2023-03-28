@@ -60,7 +60,7 @@ def encode(df, dtypes):
 def bin_numeric(df, dtypes, num_bins=25):
     rows = []
     for col in df.columns:
-        if dtypes[col] == 'numeric':
+        if dtypes[col] in ('numeric', 'date'):
             rows.append(pd.cut(df[col], bins=num_bins))
         else:
             rows.append(df[col])

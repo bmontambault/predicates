@@ -16,9 +16,9 @@ def row_to_predicates(row, data, dtypes):
     predicates = []
     for k,v in row.items():
         dtype = dtypes[k]
-        if dtype == 'numeric':
+        if dtype in ('numeric', 'date'):
             values = [v.left, v.right]
-        elif dtype in ('ordinal', 'date'):
+        elif dtype == 'ordinal':
             values = [v, v]
         else:
             values = [v]
@@ -37,9 +37,9 @@ def data_to_predicates(data, original_data, dtypes):
         predicates = []
         indices = {}
         for index,v in data[attr].sort_values().items():
-            if dtype == 'numeric':
+            if dtype in ('numeric', 'date'):
                 values = [v.left, v.right]
-            elif dtype in ('ordinal', 'date'):
+            elif dtype == 'ordinal':
                 values = [v, v]
             else:
                 values = [v]

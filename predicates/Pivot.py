@@ -25,8 +25,8 @@ class Pivot(object):
         if self.dtype == 'nominal':
             grouper = self.data[self.attribute]
         else:
-            num_bins = self.get_num_bins(min_bins, max_bins)
-            grouper = pd.cut(self.data[self.attribute], bins=num_bins)
+            # num_bins = self.get_num_bins(min_bins, max_bins)
+            grouper = pd.cut(self.data[self.attribute], bins=max_bins)
         
         if type(y) == str:
             if y == 'count':

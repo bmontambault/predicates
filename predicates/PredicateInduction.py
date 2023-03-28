@@ -38,7 +38,6 @@ class PredicateInduction(object):
 #         else:
 #             self.predicate_generator_path = predicate_generator_path
         self.started_search = False
-        self.last_accepted = None
                     
     def score(self, predicate, **kwargs):
         if predicate.__repr__() not in self.predicate_score:
@@ -61,6 +60,7 @@ class PredicateInduction(object):
         
     def fit_predicate_attribute(self, predicate, attribute):
         adjacent = predicate.get_adjacent_attribute_inner(attribute) + predicate.get_adjacent_attribute_outer(attribute)
+        
         children = self.merge_predicate_attribute_adjacent(predicate, adjacent, attribute)
         if len(children)>0:
             return self.fit_predicate_attribute(max(children, key=lambda x: self.score(x)), attribute)
@@ -78,6 +78,9 @@ class PredicateInduction(object):
         for k,v in self.attribute_predicates.items():
             if k not in predicate.attribute_values.keys():
                 for p in v:
+#                     vals = self.data.loc[predicate.mask, k]
+#                     values = list(vals.unique()) if self.dtypes[k] == 'nominal' else [vals.min(), vals.max()]
+#                     if not p.is_contained_values(values, k):
                     new_predicate = predicate.add_attribute(p, k)
                     if not new_predicate.is_contained_any(new_predicates):
                         if predicate.dtypes[k] != 'nominal':
@@ -127,6 +130,7 @@ class PredicateInduction(object):
             self.save_predicates(v, f'accepted_{k}')
     
     def search(self, predicates=None, max_accepted=None, max_steps=None, max_clauses=None, breadth_first=False):        
+        self.started_search = True
         if self.background:
             has_predicates = predicates is not None
             has_frontier = self.frontier is not None
@@ -162,11 +166,15 @@ class PredicateInduction(object):
             num_accepted = 0
             num_steps = 0
             if predicates is not None:
-                self.frontier = predicates
+                self.frontier = sorted(predicates, key=lambda x: self.score(x), reverse=True)
             
             while len(self.frontier)>0 and (max_accepted is None or num_accepted<max_accepted) and (max_steps is None or num_steps<max_steps):
                 num_steps+=1
                 predicate = self.frontier.pop(0)
+                for attribute in predicate.predicate_attributes:
+                    predicate = self.fit_predicate_attribute(predicate, attribute)
+                    
+                print('evaluate', predicate, self.score(predicate))
                 size = len(predicate.predicate_attributes)
                 accepted_could_contain = [a for b in [v for k,v in self.accepted.items() if k>=size] for a in b]
                 new_predicates = self.expand_predicate(predicate)
@@ -176,15 +184,17 @@ class PredicateInduction(object):
                             self.insert_sorted_all(self.frontier, new_predicates, breadth_first)
                         else:
                             if self.score(predicate)>0:
-                                self.last_accepted = predicate
                                 self.insert_sorted(self.accepted[size], predicate)
-                                num_accepted+=1
+                                print('accept', predicate, self.score(predicate))
+                                                                
+                                num_accepted+=1                                
                                 if self.path is not None:
                                     self.save_state()
                     else:
                         if self.score(predicate)>0:
-                            self.last_accepted = predicate
                             self.insert_sorted(self.accepted[size], predicate)
-                            num_accepted+=1
+                            print('accept', predicate, self.score(predicate))
+                            
+                            num_accepted+=1  
                             if self.path is not None:
                                 self.save_state()
