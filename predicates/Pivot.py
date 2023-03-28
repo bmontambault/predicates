@@ -26,7 +26,6 @@ class Pivot(object):
             grouper = self.data[self.attribute]
         else:
             # num_bins = self.get_num_bins(min_bins, max_bins)
-            print(max_bins)
             grouper = pd.cut(self.data[self.attribute], bins=max_bins)
         
         if type(y) == str:
