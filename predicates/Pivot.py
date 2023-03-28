@@ -56,7 +56,7 @@ class Pivot(object):
         comparison_text = get_filters_text({self.attribute: self.value}, self.dtypes)
         value_text = f'{"value" if type(y) != str else y if y == "count" else agg_func + " " + y} is {"greater" if gt else "less"} ({np.round(y_agg_in,2)}/{np.round(y_agg_out,2)})'
         if to_dict:
-            d = d.fillna(0).to_dict('records')
+            d = d.dropna().to_dict('records')
         return d, (context_text, comparison_text, value_text)
     
     def get_num_bins(self, min_bins, max_bins):
