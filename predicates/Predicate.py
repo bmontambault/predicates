@@ -44,7 +44,8 @@ class Predicate(object):
         dist.columns = ['score', 'density']
         
         if include_compliment:
-            dist = pd.concat([dist.assign(predicate=True), self.get_distribution(d, ~mask, num_bins, False).assign(predicate=False)])
+            dist = pd.concat([dist.assign(predicate=True), self.get_distribution(d, ~mask, 100, False).assign(predicate=False)])
+            # dist = pd.concat([dist.assign(predicate=True), self.get_distribution(d, ~mask, num_bins, False).assign(predicate=False)])
         return dist
         
     def to_dict(self):
