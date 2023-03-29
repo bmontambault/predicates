@@ -51,7 +51,7 @@ class Pivot(object):
         y_agg_in = y_agg[True]
         y_agg_out = y_agg[False]
         gt = y_agg_in > y_agg_out
-        if self.dtype != 'nominal':
+        if self.dtype not in ('nominal', 'date'):
             d[self.attribute] = d[self.attribute].apply(lambda x: x.left)
         
         context_text = get_filters_text(self.context, self.dtypes)
