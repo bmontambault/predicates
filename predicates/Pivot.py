@@ -47,7 +47,9 @@ class Pivot(object):
             d.columns = ['y']
             if self.dtype == 'date':
                 d[self.attribute] = self.data[self.attribute]
+
             d = d.groupby(grouper).y.mean().reset_index()
+            print(d)
             d['predicate'] = d[self.attribute].map(self.data.predicate.groupby(grouper).mean())
             d.columns = [self.attribute, 'score', 'predicate']
             y_agg = y.groupby(self.mask).mean()
