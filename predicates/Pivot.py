@@ -24,6 +24,8 @@ class Pivot(object):
     def get_plot_data_text(self, y='count', min_bins=2, max_bins=25, to_dict=False):
         if self.dtype == 'nominal':
             grouper = self.data[self.attribute]
+        elif self.dtype == 'date':
+            grouper = pd.Grouper(freq='MS', key=self.attribute)
         else:
             # num_bins = self.get_num_bins(min_bins, max_bins)
             grouper = pd.cut(self.data[self.attribute], bins=max_bins)
