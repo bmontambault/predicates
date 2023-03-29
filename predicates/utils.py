@@ -183,7 +183,7 @@ def merge_filter_value(value1, value2, dtype):
         return [left_val, right_val]
 
 def parse_value_string(value_str, dtype):
-    values = value_str[1:-1].replace(' ', '').split(',')
+    values = value_str[1:-1].split(',')#.replace(' ', '').split(',')
     if dtype == 'ordinal':
         values = [int(values[0]), int(values[1])]
     elif dtype == 'numeric':
