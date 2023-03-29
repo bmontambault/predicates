@@ -50,8 +50,10 @@ class Pivot(object):
 
             d = d.groupby(grouper).y.mean().reset_index()
             print(d)
-            
-            d['predicate'] = d[self.attribute].map(self.data.predicate.groupby(grouper).mean())
+
+            d['predicate'] = d[self.attribute].map(self.data.groupby(grouper).predicate.mean())
+
+            print(d)
             d.columns = [self.attribute, 'score', 'predicate']
             y_agg = y.groupby(self.mask).mean()
         
