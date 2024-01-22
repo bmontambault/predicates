@@ -42,6 +42,7 @@ class Predicate(object):
             counts.index = counts.index.map(lambda x: x.left)
         dist = (counts/counts.sum()).reset_index()
         dist.columns = ['score', 'density']
+        dist['counts'] = counts.values
         
         if include_compliment:
             # dist = pd.concat([dist.assign(predicate=True), self.get_distribution(d, ~mask, 100, False).assign(predicate=False)])
